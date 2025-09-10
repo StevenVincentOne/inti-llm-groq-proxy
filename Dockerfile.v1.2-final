@@ -1,0 +1,25 @@
+FROM nginx:alpine
+
+# Install curl for health checks
+RUN apk add --no-cache curl gettext
+
+# Copy the working nginx configuration template
+COPY nginx-v1.2-final.conf /etc/nginx/templates/default.conf.template
+
+# Copy working entrypoint script
+COPY entrypoint-v1.2-final.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Create log directories
+RUN mkdir -p /var/log/nginx
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/api/build_info || exit 1
+
+# Expose port 8000
+EXPOSE 8000
+
+# Use working entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

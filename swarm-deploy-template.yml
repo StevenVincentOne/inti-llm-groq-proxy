@@ -1,0 +1,103 @@
+# Docker Swarm deployment template for LLM Groq Proxy
+# Copy this file and set your GROQ_API_KEY before deploying
+
+version: '3.9'
+
+networks:
+  unmute-net:
+    external: true
+
+services:
+  llm:
+    image: nginx:alpine
+    command: |
+      sh -c "
+      # Install curl for health checks
+      apk add --no-cache curl
+      
+      # Create nginx configuration with IPv6 fixes and API key from environment
+      cat > /etc/nginx/nginx.conf << 'EOF'
+      events {
+          worker_connections 1024;
+      }
+      http {
+          # IPv4-only DNS resolution to prevent IPv6 connection failures
+          resolver 1.1.1.1 8.8.8.8 ipv6=off valid=300s;
+          
+          server {
+              listen 8000;
+              
+              # Access logs
+              access_log /var/log/nginx/access.log;
+              error_log /var/log/nginx/error.log;
+              
+              # Health check endpoint
+              location = /api/build_info {
+                  return 200 '{\"status\": \"ok\", \"service\": \"llm-groq-proxy\"}';
+                  add_header Content-Type application/json;
+              }
+              
+              # Health check for vllm compatibility
+              location = /health {
+                  return 200 '{\"status\": \"ok\"}';
+                  add_header Content-Type application/json;
+              }
+              
+              # Models endpoint
+              location /models {
+                  proxy_pass https://api.groq.com/openai/v1/models;
+                  proxy_set_header Authorization 'Bearer YOUR_GROQ_API_KEY_HERE';
+                  proxy_set_header Content-Type application/json;
+                  proxy_set_header Host api.groq.com;
+                  proxy_ssl_server_name on;
+                  proxy_ssl_verify off;
+                  proxy_connect_timeout 30s;
+                  proxy_send_timeout 60s;
+                  proxy_read_timeout 60s;
+              }
+              
+              # Chat completions endpoint
+              location /chat/completions {
+                  proxy_pass https://api.groq.com/openai/v1/chat/completions;
+                  proxy_set_header Authorization 'Bearer YOUR_GROQ_API_KEY_HERE';
+                  proxy_set_header Content-Type application/json;
+                  proxy_set_header Host api.groq.com;
+                  proxy_ssl_server_name on;
+                  proxy_ssl_verify off;
+                  proxy_connect_timeout 30s;
+                  proxy_send_timeout 60s;
+                  proxy_read_timeout 60s;
+              }
+              
+              # Catch-all for other OpenAI-compatible endpoints
+              location / {
+                  proxy_pass https://api.groq.com/openai/v1/;
+                  proxy_set_header Authorization 'Bearer YOUR_GROQ_API_KEY_HERE';
+                  proxy_set_header Content-Type application/json;
+                  proxy_set_header Host api.groq.com;
+                  proxy_ssl_server_name on;
+                  proxy_ssl_verify off;
+                  proxy_connect_timeout 30s;
+                  proxy_send_timeout 60s;
+                  proxy_read_timeout 60s;
+              }
+          }
+      }
+      EOF
+      
+      echo 'Starting LLM Groq Proxy with IPv6 fixes for gpt-oss-20b model...'
+      nginx -t && nginx -g 'daemon off;'
+      "
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/build_info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      update_config:
+        order: start-first
+    networks:
+      - unmute-net

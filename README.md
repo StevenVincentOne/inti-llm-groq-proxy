@@ -1,6 +1,19 @@
 # Inti LLM Groq Proxy
 
+**Status**: ✅ **PRODUCTION READY** - IPv6 Issues Resolved  
+**Current Version**: v1.2-inline-config (Working)  
+**Last Updated**: 2025-09-10  
+**Model Support**: ✅ **gpt-oss-20b validated and working**
+
 An Nginx-based HTTP proxy that provides OpenAI-compatible API access to Groq's language models. This proxy handles authentication, eliminates IPv6 connectivity issues, and provides health monitoring for Docker Swarm deployments.
+
+## 🎯 Current Working Solution
+
+**Recommended Approach**: **Inline configuration** in Docker Swarm
+- ✅ **Currently deployed and functional**
+- ✅ **IPv6 connectivity issues resolved**  
+- ✅ **gpt-oss-20b model working end-to-end**
+- ✅ **No Docker entrypoint issues**
 
 ## Overview
 
