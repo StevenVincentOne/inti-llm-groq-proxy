@@ -15,10 +15,10 @@ RUN mkdir -p /var/log/nginx
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/api/build_info || exit 1
+    CMD curl -f http://localhost:8080/api/build_info || exit 1
 
-# Expose port 8000
-EXPOSE 8000
+# Expose port 8080
+EXPOSE 8080
 
 # Use working entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
