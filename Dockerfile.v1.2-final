@@ -9,6 +9,8 @@ COPY nginx-v1.2-final.conf /etc/nginx/templates/default.conf.template
 # Copy working entrypoint script
 COPY entrypoint-v1.2-final.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+# Normalize line endings to LF to avoid /entrypoint.sh exec errors on Linux
+RUN sed -i 's/\r$//' /entrypoint.sh
 
 # Create log directories
 RUN mkdir -p /var/log/nginx
@@ -23,3 +25,4 @@ EXPOSE 8080
 # Use working entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
+
